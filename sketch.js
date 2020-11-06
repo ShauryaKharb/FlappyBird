@@ -1,11 +1,12 @@
 var START=10;
 var PLAY=1;
 var END=0;
-var gameState=PLAY;
+var gameState=START;
 var score=0;
 var edge;
 var left,leftI;
 var right,rightI;
+var play,playI;
 var blue,blueI;
 var red,redI;
 var tap,tapI;
@@ -22,17 +23,21 @@ function preload(){
   
   groundI=loadImage("realGround.png");
 
-  //leftI=loadImage("leftArrow.png");
-  //rightI=loadImage("rightArrow.png");
+  leftI=loadImage("leftArrow.png");
+  rightI=loadImage("rightArrow.png");
   
   birdI=loadImage("yellowBird.png");
-  //redI=loadImage("redBird.png");
-  //blueI=loadImage("blue bird.png");
+  redI=loadImage("redBird.png");
+  blueI=loadImage("blueBird.png");
 
   gameOverI=loadImage("RealgameOver.png");
   
   pipeUpI=loadImage("pipe1(down).png");
   pipeDownI=loadImage("pipe1.png");
+
+  jumpSound=loadSound("Super Mario Jump.mp3");
+
+  playI=loadImage("play.png");
   
 //====================================================================//
 //                           END PRELOAD                              //
@@ -55,10 +60,24 @@ function setup() {
   
   
   bird=createSprite(350,200,20,20);
-  bird.addImage("flappy",birdI);
+  bird.addImage("yellow",birdI);
+  bird.addImage("blue",blueI);
+  bird.addImage("red",redI);
   bird.scale=0.08;
   //bird.debug=true;
   bird.setCollider("circle",-100,-100,300);
+
+  left=createSprite(225,400,20,20,20);
+  left.addImage(leftI);
+  left.scale=0.2;
+
+  right=createSprite(475,400,30,30);
+  right.addImage(rightI);
+  right.scale=0.2;
+
+  play=createSprite(350,400,40,40);
+  play.addImage(playI);
+  play.scale=0.1;
   
   gameOver=createSprite(350,300,30,30);
   gameOver.addImage(gameOverI);
@@ -79,22 +98,54 @@ function setup() {
 
 function draw() {
   background(400);
-  bird.collide(ground);
   
   Pipes();
   
-  bird.collide(edge[2])
-  
     if (gameState===START){
+      gameOver.visible=false;
+
+      left.visible=true;
+      right.visible=true;
+
+      bird.velocityY=0;
+      ground.velocityX=0;
+      pipeUpG.setVelocityXEach(0);
+      pipeDownG.setVelocityXEach(0);
+
+      if (mousePressedOver(left)){
+       bird.changeAnimation("blue",blueI)
+       bird.scale=0.2;
+       //bird.debug=true;
+       bird.setCollider("circle",20,0,130);
+      }
+      if (mousePressedOver(right)){
+        bird.changeAnimation("red",redI);
+        bird.scale=0.1;
+        //bird.debug=true;
+        bird.setCollider("circle",20,0,250);
+      }
+      if (touches.length>0 || keyDown("SPACE") || mousePressedOver(play)){
+        gameState=PLAY;
+        touches=[];
+      }
+
 
     }else if (gameState===PLAY){
     
     Score();
+
+    bird.collide(edge[2]);
+
+    left.visible=false;
+    right.visible=false;
+    play.visible=false;
+
     gameOver.visible=false;
     ground.velocityX=-6;
     //BIRD VELOCITY
     if (touches.length<1 || keyWentDown("SPACE") || mousePressedOver(scene) || mousePressedOver(ground)){
       bird.velocityY=-15;
+      jumpSound.play();
       touches=[""];
     }
     bird.velocityY+=1.5;
@@ -119,8 +170,14 @@ function draw() {
       pipeDownG.setVelocityXEach(0);
       pipeDownG.setLifetimeEach(-1);
       ground.velocityX=0;
+
+      left.visible=false;
+      right.visible=false;
+      play.visible=false;
       
-      if (mousePressedOver(gameOver)){
+      if (mousePressedOver(gameOver) || touches.length<0){
+        touches=[""];
+        bird.y=300;
         Reset();
       }
 
@@ -171,7 +228,9 @@ function Pipes(){
     //pipeDown.debug=true;
     pipeDown.setCollider("rectangle",0,0,160,480);
     
-    pipeDown.y=Math.round(random(400,600))
+    pipeDown.y=Math.round(random(400,600));
+
+    pipeUp.x=pipeDown.x;
     
     pipeUp.y=pipeDown.y-500;
     
